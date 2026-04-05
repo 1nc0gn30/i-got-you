@@ -1,8 +1,44 @@
-import { Box, Container, Typography, Grid, TextField, Button, Card, CardContent } from '@mui/material';
+import { FormEvent, useState } from 'react';
+import { Alert, Box, Container, Typography, Grid, TextField, Button, Card, CardContent } from '@mui/material';
 import { motion } from 'motion/react';
-import { Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 export default function Contact() {
+  const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+
+  const encodeFormData = (data: FormData) => {
+    const params = new URLSearchParams();
+    data.forEach((value, key) => {
+      params.append(key, String(value));
+    });
+    return params.toString();
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    setSubmitState('submitting');
+
+    try {
+      const response = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: encodeFormData(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Form submission failed');
+      }
+
+      form.reset();
+      setSubmitState('success');
+    } catch {
+      setSubmitState('error');
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -36,8 +72,15 @@ export default function Contact() {
                 <Typography variant="h4" sx={{ mb: 4, fontWeight: 800, textAlign: 'center' }}>Send us a message</Typography>
                 
                 {/* Netlify Form Integration */}
-                <form name="contact" method="POST" data-netlify="true">
+                <form
+                  name="contact"
+                  method="POST"
+                  data-netlify="true"
+                  data-netlify-honeypot="bot-field"
+                  onSubmit={handleSubmit}
+                >
                   <input type="hidden" name="form-name" value="contact" />
+                  <input type="hidden" name="bot-field" />
                   
                   <Grid container spacing={4}>
                     <Grid size={{ xs: 12, sm: 6 }}>
@@ -61,12 +104,27 @@ export default function Contact() {
                         variant="contained" 
                         size="large" 
                         fullWidth 
+                        disabled={submitState === 'submitting'}
                         endIcon={<Send size={20} />}
                         sx={{ py: 2.5, borderRadius: 3, fontSize: '1.1rem', fontWeight: 700 }}
                       >
-                        Send Message
+                        {submitState === 'submitting' ? 'Sending...' : 'Send Message'}
                       </Button>
                     </Grid>
+                    {submitState === 'success' && (
+                      <Grid size={{ xs: 12 }}>
+                        <Alert severity="success">
+                          Message sent successfully. We&apos;ll reach out shortly.
+                        </Alert>
+                      </Grid>
+                    )}
+                    {submitState === 'error' && (
+                      <Grid size={{ xs: 12 }}>
+                        <Alert severity="error">
+                          We couldn&apos;t send your message. Please try again.
+                        </Alert>
+                      </Grid>
+                    )}
                   </Grid>
                 </form>
               </CardContent>
