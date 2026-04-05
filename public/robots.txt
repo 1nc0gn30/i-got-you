@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://igotyou.757tech.pro/sitemap.xml
